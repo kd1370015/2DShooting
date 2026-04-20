@@ -27,6 +27,8 @@ private:
 
 	//C_Hit m_hit;
 
+	int Test = 0;
+
 public:
 
 	// ‰Šúİ’è
