@@ -100,7 +100,7 @@ void Scene::Init()
 	//m_map.Init();
 	//m_map.SetTex(&m_mapTex);
 
-	m_playerTex.Load("Player.png");
+	m_playerTex.Load("Texture/Player/Player.png");
 	m_player.Init();
 	m_player.SetTex(&m_playerTex);
 
