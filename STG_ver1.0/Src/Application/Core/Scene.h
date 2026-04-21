@@ -3,6 +3,7 @@
 #include "Application/Player/player.h"
 #include <vector>
 #include "Application/VFX/bullet.h"
+#include "Application/System/mouse.h"
 
 
 
@@ -18,6 +19,12 @@ private:
 
 	std::vector<C_Bullet*> m_bullets; // 管理しやすいようポインタの動的配列に
 	KdTexture m_bulletTex;           // 弾のテクスチャ（実体）
+
+	KdTexture m_crosshairTex; // ★クロスヘア用のテクスチャを追加
+
+	Math::Vector2 m_mousePos; // ★マウス位置を保持する変数
+
+	C_Mouse m_mouse; // 追加
 
 	//KdTexture m_enemyTex;
 	//C_Enemy m_enemy;
@@ -51,6 +58,10 @@ public:
 	C_Player* GetPlayer() { return &m_player; }
 	//C_Enemy* GetEnemy() { return &m_enemy; }
 	//C_Map* GetMap() { return &m_map; }
+
+
+	// ... 他の関数 ...
+	C_Mouse* GetMouse() { return &m_mouse; } // これが必要
 
 private:
 

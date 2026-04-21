@@ -36,41 +36,28 @@ void C_Player::Update()
 	// 座標確定処理
 	m_pos += m_move;
 
-	// --- マウスの方向を向く処理 ---
-	POINT mousePos;
-	GetCursorPos(&mousePos);
-	ScreenToClient(APP.m_window.GetWndHandle(), &mousePos);
+	// --- マウスの方向を向く処理 (C_Mouseから座標をもらう) ---
+	// ※Sceneクラスに GetMouse() が実装されている前提です
+	Math::Vector2 mousePos = SCENE.GetMouse()->GetPos();
 
-	// マウスの座標系を実行画面の座標系(中心が0,0)に補正
-	float mouseX = (float)mousePos.x - (ScrWidth / 2.0f);
-	float mouseY = (float)mousePos.y - (ScrHeight / 2.0f);
-	mouseY *= -1; // Y軸をゲーム座標系（上がプラス）に合わせる
-
-	// 自機の描画位置
+	// 自機の描画位置（画面上の相対位置）
 	float screenPosX = m_pos.x - m_scrollX;
 	float screenPosY = m_pos.y;
 
-	// 差分計算：【目標 - 自分】にする
-	float diffX = mouseX - screenPosX;
-	float diffY = mouseY - screenPosY; // 修正ポイント：ここを (マウス - 自機) に
+	// 差分計算：【マウス座標 - 自機の画面内座標】
+	float diffX = mousePos.x - screenPosX;
+	float diffY = mousePos.y - screenPosY;
 
 	// 角度を算出
-	float angle = atan2f(diffY, diffX);
+	m_angle = atan2f(diffY, diffX);
 
-
-	 // ★計算した角度をメンバ変数に保存しておく
-	 m_angle = angle;
-
-	 // 自機の画像補正（上向き素材の場合）
-	 float drawAngle = m_angle - DirectX::XM_PIDIV2;
-
-
+	// 自機の画像補正（上向き素材の場合の-90度補正）
+	float drawAngle = m_angle - DirectX::XM_PIDIV2;
 
 	// 行列の作成
 	m_scaleMat = Math::Matrix::CreateScale(m_scaleX, m_scaleY, 1.0f);
-	// 行列作成時は描画用の角度（drawAngle）を使う
 	Math::Matrix rotMat = Math::Matrix::CreateRotationZ(drawAngle);
-	m_transMat = Math::Matrix::CreateTranslation(m_pos.x - m_scrollX, m_pos.y, 0);
+	m_transMat = Math::Matrix::CreateTranslation(screenPosX, screenPosY, 0);
 
 	// 合成
 	m_mat = m_scaleMat * rotMat * m_transMat;
