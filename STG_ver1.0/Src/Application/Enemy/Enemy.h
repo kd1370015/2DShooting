@@ -19,4 +19,5 @@ private:
     Math::Vector2 m_move;
     bool m_alive = false;
     const float m_speed = 2.0f; // “G‚ÌˆÚ“®‘¬“x
+
 };

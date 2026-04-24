@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "Application/VFX/bullet.h"
+#include "Application/Item/Orb.h"  // これを追加！
 
 
 class Scene; //前方宣言
@@ -31,6 +32,8 @@ public:
 
 
 	void SetTex(KdTexture* tex) { m_tex = tex; }
+	bool IsAlive() const { return m_alive; }
+
 	void SetAlive(bool alive) { m_alive = alive; }
 	void SetOwner(Scene* owner) { m_owner = owner; }
 
@@ -40,10 +43,13 @@ public:
 	Math::Vector2 GetFuturePos() { return m_pos + m_move; }
 	float GetRadius() { return 32.0f; }
 
+	// 移動量を取得する関数を追加
+	Math::Vector2 GetMove() const { return m_move; }
 
 	std::vector<C_Bullet> m_bullets;
 	KdTexture* m_bulletTex; // 弾のテクスチャ
 
+	void Upgrade(OrbType type);
 
 
 private:
@@ -72,9 +78,13 @@ private:
 
 	float m_angle; // ★これを追加：マウスへの角度を保存する用
 
-	// ついでに連射制限用のタイマーもあると便利です
-	int m_shootTimer = 0;
 
+	int   m_shotCount = 1;     // 一度に発射する弾の数（初期値1）
+	float m_spreadAngle = 15.0f; // 弾と弾の間の角度（度数法）
+	float m_bulletSpeed = 10.0f; // 初期弾速（Bulletに渡す用）
+
+	int m_shootInterval = 10; // 初期値（小さいほど速い）
+	int m_shootTimer = 0;    // タイマー管理用
 
 
 	static const int ScrWidth = 1280;

@@ -1,4 +1,5 @@
 #include "Enemy.h"
+#include "../Core/Scene.h" // シーンへのアクセスのため
 
 void C_Enemy::Init(Math::Vector2 pos) {
     m_pos = pos;

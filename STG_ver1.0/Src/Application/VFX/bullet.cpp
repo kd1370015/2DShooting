@@ -25,8 +25,8 @@ void C_Bullet::Update()
     m_pos += m_move;
 
     // 画面外に出たら消す（画面サイズに合わせて調整してください）
-    if (m_pos.x < -700 || m_pos.x > 400 ||
-        m_pos.y < -700 || m_pos.y > 400)
+    if (m_pos.x < -640 || m_pos.x > 640 ||
+        m_pos.y < -360 || m_pos.y > 360)
     {
         m_alive = false;
     }
