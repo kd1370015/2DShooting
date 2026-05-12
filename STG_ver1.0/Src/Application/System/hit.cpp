@@ -1,83 +1,105 @@
-#include "hit.h"
+ï»¿#include "hit.h"
 #include "../VFX/Bullet.h"
 #include "../Enemy/Enemy.h"
-#include "../Player/player.h" // ’Ç‰Á
-#include "../Core/Scene.h"  // ’Ç‰Á
+#include "../Enemy/EnemyTurret.h" // è¿½åŠ 
+#include "../Player/player.h"
+#include "../Core/Scene.h"
+#include <Application/Scene/GameScene/GameScene.h>
 
+// å¼¾ã¨é€šå¸¸æ•µã®åˆ¤å®š
+// å¼¾ã¨é€šå¸¸æ•µã®åˆ¤å®š
+void C_Hit::CheckBulletToEnemy(std::vector<C_Bullet*>& bullets, std::vector<std::shared_ptr<C_Enemy>>& enemies, GameScene* scene) {
+    if (!scene) return;
 
-//void C_Hit::CheckBulletToEnemy(std::vector<C_Bullet*>& bullets, std::vector<C_Enemy*>& enemies) {
-//    for (auto& bullet : bullets) {
-//         ‚·‚Å‚ÉÁ‚¦‚Ä‚¢‚é’e‚Í–³‹
-//        if (!bullet->IsAlive()) continue;
-//
-//        for (auto& enemy : enemies) {
-//             ‚·‚Å‚ÉÁ‚¦‚Ä‚¢‚é“G‚Í–³‹
-//            if (!enemy->IsAlive()) continue;
-//
-//             ’e‚Æ“G‚ÌÀ•W‚ğæ“¾
-//            auto bPos = bullet->GetPos();
-//            auto ePos = enemy->GetPos();
-//
-//             “–‚½‚è”»’èi”¼Œa‚Ì‡ŒvBƒTƒCƒY‚É‡‚í‚¹‚Ä’²®‚µ‚Ä‚­‚¾‚³‚¢j
-//             ’e(8px) + “G(16px)  24px ‚­‚ç‚¢‚ª–ÚˆÀ
-//            if (IsHitCircle(bPos.x, bPos.y, ePos.x, ePos.y, 24.0f)) {
-//                bullet->SetAlive(false); // ’eÁ–Å
-//                enemy->SetAlive(false);  // “GÁ–Å
-//
-//                 ’e‚ª1‚ÂÁ‚¦‚½‚çA‚»‚Ì’e‚Ì“Gƒ‹[ƒv‚ÍI—¹
-//                break;
-//            }
-//
-//        }
-//    }
-//}
-
-void C_Hit::CheckBulletToEnemy(std::vector<C_Bullet*>& bullets, std::vector<C_Enemy*>& enemies) {
     for (auto& bullet : bullets) {
         if (!bullet->IsAlive()) continue;
 
         for (auto& enemy : enemies) {
             if (!enemy->IsAlive()) continue;
 
-            auto bPos = bullet->GetPos();
-            auto ePos = enemy->GetPos();
-
-            if (IsHitCircle(bPos.x, bPos.y, ePos.x, ePos.y, 24.0f)) {
+            if (IsHitCircle(bullet->GetPos().x, bullet->GetPos().y, enemy->GetPos().x, enemy->GetPos().y, 24.0f)) {
                 bullet->SetAlive(false);
                 enemy->SetAlive(false);
 
-                // 50%‚ÌŠm—¦‚Åƒhƒƒbƒv‚³‚¹‚éê‡
-                if (rand() % 100 < 10) {
-                    SCENE.AddOrb(ePos);
-                }                // ---------------------------------
+                // â˜… SCENE ãƒã‚¯ãƒ­ã‚’å¼•æ•°ã® scene ã«æ›¸ãæ›ãˆ
+                scene->GetScore().AddScore(100);
 
+                if (rand() % 100 < 10) {
+                    scene->AddOrb(enemy->GetPos());
+                }
                 break;
             }
         }
     }
 }
 
-void C_Hit::CheckPlayerToEnemy(C_Player& player, std::vector<C_Enemy*>& enemies) {
-    if (!player.IsAlive()) return; // ƒhƒbƒg(.)‚ÅƒAƒNƒZƒX
+// å¼¾ã¨ç ²å°ã®åˆ¤å®š
+void C_Hit::CheckBulletToTurret(std::vector<C_Bullet*>& bullets, std::vector<std::shared_ptr<C_EnemyTurret>>& turrets, GameScene* scene) {
+    if (!scene) return;
+
+    for (auto& bullet : bullets) {
+        if (!bullet->IsAlive()) continue;
+
+        for (auto& turret : turrets) {
+            if (!turret->IsAlive()) continue;
+
+            if (IsHitCircle(bullet->GetPos().x, bullet->GetPos().y, turret->GetPos().x, turret->GetPos().y, 32.0f)) {
+                bullet->SetAlive(false);
+                turret->SetAlive(false);
+
+                // â˜… ã“ã“ã‚‚ scene çµŒç”±ã«å¤‰æ›´
+                scene->GetScore().AddScore(100);
+
+                if (rand() % 100 < 10) {
+                    scene->AddOrb(turret->GetPos());
+                }
+                break;
+            }
+        }
+    }
+}
+// hit.cpp
+void C_Hit::CheckPlayerToEnemyBullet(C_Player& player, std::vector<C_Bullet*>& enemyBullets) {
+    if (!player.IsAlive()) return;
+
+    auto pPos = player.GetPos();
+    // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®å½“ãŸã‚Šåˆ¤å®šåŠå¾„ï¼ˆå°‘ã—å°ã•ã‚ã«ã™ã‚‹ã¨é¿ã‘ã‚„ã™ãã¦æ°—æŒã¡ã„ã„ã§ã™ï¼‰
+    float pRadius = player.GetRadius() * 0.7f;
+
+    for (auto& eb : enemyBullets) {
+        if (!eb->IsAlive()) continue;
+
+        auto bPos = eb->GetPos();
+
+        // è·é›¢åˆ¤å®šï¼ˆå¼¾ã®åŠå¾„ã‚’ 8px ã¨æƒ³å®šï¼‰
+        if (IsHitCircle(pPos.x, pPos.y, bPos.x, bPos.y, pRadius + 8.0f)) {
+            // å¼¾ãŒå½“ãŸã£ãŸï¼
+            player.DecreaseHp(1); // HPã‚’æ¸›ã‚‰ã™
+            eb->SetAlive(false);   // å¼¾ã‚’æ¶ˆã™
+        }
+    }
+}
+
+void C_Hit::CheckPlayerToEnemy(C_Player& player, std::vector<std::shared_ptr<C_Enemy>>& enemies) {
+    if (!player.IsAlive()) return;
 
     for (auto& enemy : enemies) {
         if (!enemy->IsAlive()) continue;
 
-        auto pPos = player.GetPos(); // ƒhƒbƒg(.)‚ÅƒAƒNƒZƒX
+        auto pPos = player.GetPos();
         auto ePos = enemy->GetPos();
 
         float hitDistance = player.GetRadius() + 16.0f;
 
         if (IsHitCircle(pPos.x, pPos.y, ePos.x, ePos.y, hitDistance)) {
-            //player.SetAlive(false);     //€–S”»’è
+            player.DecreaseHp(1);
+            enemy->SetAlive(false); // ã¶ã¤ã‹ã£ãŸæ•µã‚‚æ¶ˆã™ã®ãŒä¸€èˆ¬çš„
         }
     }
 }
 
-
 bool C_Hit::IsHitCircle(float x1, float y1, float x2, float y2, float radius) {
     float dx = x1 - x2;
     float dy = y1 - y2;
-    // ‹——£‚Ì2æ … ”¼Œa‚Ì2æ
     return (dx * dx + dy * dy) <= (radius * radius);
 }

@@ -4,7 +4,7 @@
 #include "Application/Item/Orb.h"  // これを追加！
 
 
-class Scene; //前方宣言
+class GameScene;
 
 class C_Player
 {
@@ -35,7 +35,7 @@ public:
 	bool IsAlive() const { return m_alive; }
 
 	void SetAlive(bool alive) { m_alive = alive; }
-	void SetOwner(Scene* owner) { m_owner = owner; }
+	void SetOwner(GameScene* owner) { m_owner = owner; }
 
 	float GetScrollX() { return m_scrollX; }
 
@@ -51,10 +51,15 @@ public:
 
 	void Upgrade(OrbType type);
 
+	// 宣言だけに書き換える
+	void DecreaseHp(int damage);
+
+	int GetHp() const { return m_hp; }
+	void SetHp(int hp) { m_hp = hp; }
 
 private:
 
-	Scene* m_owner;
+	GameScene* m_owner;
 
 	float m_scaleX;		//横拡大行列
 	float m_scaleY;		//縦拡大行列
@@ -62,8 +67,11 @@ private:
 	float m_scrollMin;
 	float m_scrollMax;
 
+	int m_hp = 5;       // 現在のHP
+	int m_maxHp = 5;    // 最大HP
+	int m_invincibleTimer = 0; // 無敵タイマー
 
-	const float MovePow = 5.0f;				//移動力
+	const float MovePow = 2.0f;				//移動力
 
 
 	KdTexture* m_tex;
@@ -81,9 +89,9 @@ private:
 
 	int   m_shotCount = 1;     // 一度に発射する弾の数（初期値1）
 	float m_spreadAngle = 15.0f; // 弾と弾の間の角度（度数法）
-	float m_bulletSpeed = 10.0f; // 初期弾速（Bulletに渡す用）
+	float m_bulletSpeed = 1.0f; // 初期弾速（Bulletに渡す用）
 
-	int m_shootInterval = 10; // 初期値（小さいほど速い）
+	int m_shootInterval = 50; // 初期値（小さいほど速い）
 	int m_shootTimer = 0;    // タイマー管理用
 
 

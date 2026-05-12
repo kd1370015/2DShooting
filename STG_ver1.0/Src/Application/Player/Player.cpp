@@ -1,44 +1,57 @@
 ﻿#include "Player.h"
-#include "Application/Core/Scene.h"
+#include <Application/Scene/GameScene/GameScene.h>
+#include <Application/System/mouse.h>
 #include <Application/Core/main.h>
 
 //player.cpp
 
+
+
+
 void C_Player::Draw()
 {
-	if (!m_alive) return;
+	// 画像がない、または死んでいるなら何もしない
+	if (!m_alive || !m_tex) return;
 
-	SHADER.m_spriteShader.SetMatrix(m_mat);
-	SHADER.m_spriteShader.DrawTex(m_tex, Math::Rectangle(0, 0, 64, 64), 1.0f);
+	// 行列を一度リセット（これまでの描画の影響を消す）
+	SHADER.m_spriteShader.SetMatrix(Math::Matrix::Identity);
 
+	// 矩形（画像のサイズ 64x64 と仮定）
+	Math::Rectangle srcRect = { 0, 0, 64, 64 };
 
+	// 第2, 第3引数に「現在の座標(m_pos)」を渡して描画
+	// &srcRect と & 忘れずに！
+	SHADER.m_spriteShader.DrawTex(m_tex, (int)m_pos.x, (int)m_pos.y, &srcRect);
 }
-
-//void C_Player::MapHitX(float posX, float moveX)
-//{
-//	m_pos.x = posX;
-//	m_move.x = moveX;
-//}
-//
-//
-//void C_Player::MapHitY(float posY, float moveY, bool Jump)
-//{
-//	m_pos.y = posY;
-//	m_move.y = moveY;
-//	m_jump = Jump;
-//}
-
-
-
 
 void C_Player::Update()
 {
+	//if (!m_owner) return; // 安全策
+
+
 	// 座標確定処理
 	m_pos += m_move;
 
+	// Update内
+// --- 移動制限の追加 (1280x720 画面中央0,0想定) ---
+	float limitX = (1280.0f / 2.0f) - 32.0f; // 画面端 640 から自機の半径 32 を引く
+	float limitY = (720.0f / 2.0f) - 32.0f;  // 画面端 360 から自機の半径 32 を引く
+
+	// X方向の制限
+	if (m_pos.x > limitX) m_pos.x = limitX;
+	if (m_pos.x < -limitX) m_pos.x = -limitX;
+
+	// Y方向の制限
+	if (m_pos.y > limitY) m_pos.y = limitY;
+	if (m_pos.y < -limitY) m_pos.y = -limitY;
+
+	if (m_invincibleTimer > 0) m_invincibleTimer--; // タイマーを減らす
+
 	// --- マウスの方向を向く処理 (C_Mouseから座標をもらう) ---
 	// ※Sceneクラスに GetMouse() が実装されている前提です
-	Math::Vector2 mousePos = SCENE.GetMouse()->GetPos();
+// m_owner（GameScene*）経由でマウス座標を取得
+	Math::Vector2 mousePos = m_owner->GetMouse()->GetPos();
+
 
 	// 自機の描画位置（画面上の相対位置）
 	float screenPosX = m_pos.x - m_scrollX;
@@ -73,10 +86,6 @@ void C_Player::Init()
 
 
 
-	//C_Map* map = m_owner->GetMap();
-	//m_scrollX = 0.0f;
-	//m_scrollMin = map->GetPos(0, 0).x + 640;
-	//m_scrollMax = map->GetPos(0, map->GetWidth() - 1).x - 640;
 
 }
 
@@ -84,7 +93,6 @@ void C_Player::Action()
 {
 	if (!m_alive) return;
 
-	//bDashing = (GetAsyncKeyState(VK_SHIFT) & 0x8000);
 
 
 
@@ -96,26 +104,22 @@ void C_Player::Action()
 	// Dキー（右移動）
 	if (GetAsyncKeyState('D') & 0x8000)
 	{
-		// Shiftキーが押されていればダッシュ倍率をかける
 		m_move.x += MovePow;
 	}
 
 	// Aキー（左移動）
 	if (GetAsyncKeyState('A') & 0x8000)
 	{
-		// Shiftキーが押されていればダッシュ倍率をかける
 		m_move.x -= MovePow;
 	}
 
 	if (GetAsyncKeyState('W') & 0x8000)
 	{
-		// Shiftキーが押されていればダッシュ倍率をかける
 		m_move.y += MovePow;
 	}
 
 	if (GetAsyncKeyState('S') & 0x8000)
 	{
-		// Shiftキーが押されていればダッシュ倍率をかける
 		m_move.y -= MovePow;
 	}
 
@@ -136,7 +140,7 @@ void C_Player::Action()
 				if (m_shotCount > 1) {
 					offset = (i - (m_shotCount - 1) * 0.5f) * spreadRad;
 				}
-				SCENE.AddBullet(m_pos, m_angle + offset);
+				m_owner->AddBullet(m_pos, m_angle + offset);
 			}
 
 			// 10固定ではなく、変数にする
@@ -148,6 +152,9 @@ void C_Player::Action()
 		// 次に押した瞬間にすぐ撃てるので操作感が良くなります
 		if (m_shootTimer > 0) m_shootTimer--;
 	}
+
+	// ★重要：計算した移動量を座標に反映する
+	m_pos += m_move;
 
 }
 
@@ -171,4 +178,18 @@ void C_Player::Upgrade(OrbType type) {
 		if (m_shotCount > 15) m_shotCount = 15;
 		break;
 	}
+}
+
+
+// Player.cpp
+void C_Player::DecreaseHp(int damage) {
+	// 1. 無敵タイマーが動いている間は、ダメージ処理を完全にスルーする
+	if (m_invincibleTimer > 0) return;
+
+	// 2. HPを減らす
+	m_hp -= damage;
+	if (m_hp < 0) m_hp = 0;
+
+	// 3. 被弾した瞬間にタイマーをセット
+	m_invincibleTimer = 60; // 1秒間
 }

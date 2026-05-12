@@ -1,6 +1,6 @@
 #include "main.h"
 
-#include "Scene.h"
+#include "Application/Scene/SceneManager.h"
 
 //===================================================================
 // メイン
@@ -140,13 +140,12 @@ void Application::Execute()
 		return;
 	}
 
-
+	// ★重要：最初に開始するシーンを設定（例：タイトルから）
+	SceneManager::GetInstance().SetNextScene(SceneManager::SceneType::Title);
 	//===================================================================
 	// ゲームループ
 	//===================================================================
 
-	// ゲームインスタンス
-	SCENE.Init();
 
 	// 時間
 	DWORD baseTime = timeGetTime();
@@ -187,6 +186,11 @@ void Application::Execute()
 		//=========================================
 		AUDIO.Update();
 
+
+		// 1. シーン切り替えチェック
+		SceneManager::GetInstance().PreUpdate();
+		// 2. 現在のシーンの更新
+		SceneManager::GetInstance().Update();
 		//=========================================
 		//
 		// ゲーム処理
@@ -199,11 +203,11 @@ void Application::Execute()
 		D3D.GetDevContext()->ClearDepthStencilView(D3D.GetZBuffer(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
 		// ゲーム更新処理
-		SCENE.Update();
+		// ★修正ポイント：SceneManager を通じて現在のシーンを更新・描画する
 
 		// ゲーム描画処理
 		SHADER.m_spriteShader.Begin();
-		SCENE.Draw2D();
+		SceneManager::GetInstance().Draw();
 		SHADER.m_spriteShader.End();
 
 
@@ -213,7 +217,7 @@ void Application::Execute()
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 		// ImGui処理
-		SCENE.ImGuiUpdate();
+		//SCENE.ImGuiUpdate();
 		// GUI描画実行
 		ImGui::Render();
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -250,8 +254,7 @@ void Application::Execute()
 	}
 
 	// ゲーム解放
-	SCENE.Release();
-
+	//SceneManager::GetInstance().Release();
 
 	//===================================================================
 	// アプリケーション解放
