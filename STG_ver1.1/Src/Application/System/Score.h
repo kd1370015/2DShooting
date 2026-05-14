@@ -24,6 +24,10 @@ public:
 		}
 	}
 
+	// Œ»İ‚ÌƒXƒRƒA‚ğæ“¾‚·‚éŠÖ”‚ğ’Ç‰Á
+	unsigned long GetScore() const { return m_score; }
+
+
 private:
 	static const int maxDigits = 7; // Å‘åŒ…”
 

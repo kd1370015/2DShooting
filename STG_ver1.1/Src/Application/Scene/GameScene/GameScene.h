@@ -6,8 +6,11 @@
 #include "../BaseScene/BaseScene.h"
 #include "Application/Player/player.h"
 #include "Application/Enemy/EnemyManager.h"
+#include "Application/Enemy/BossBullet.h"
+#include "Application/Enemy\boss.h"
 #include "Application/VFX/Back.h"
 #include "Application/VFX/explosion.h"
+#include "Application/VFX/Fexpl.h"
 #include "Application/System/mouse.h"
 #include "Application/System/Score.h"
 #include "Application/Scene/SceneManager.h"
@@ -30,14 +33,22 @@ public:
 
 	// 外部から呼ばれる追加関数（弾の追加など）
 	void AddBullet(Math::Vector2 pos, float angle);
+
 	void AddEnemyBullet(Math::Vector2 pos, float angle);
+	// ボスの弾を追加するための関数
+	void AddBossBullet(Math::Vector2 pos, float angle);
+	//void AddEnemyBullet(Math::Vector2 pos, float angle, bool isBossBullet);
 	void AddOrb(Math::Vector2 pos);
 	void AddEffect(Math::Vector2 pos, float scale); // ★追加：エフェクトを追加する関数
 	// 他の Add... 関数の並びに追加
 	void AddExplosion(Math::Vector2 pos);
+	void AddFExplosion(Math::Vector2 pos);
 	// ... 既存の関数 ...
-	void AddLevelUpEffect(Math::Vector2 pos); // エフェクト発生用関数
 
+	void AddLevelUpEffect(); // 引数なしに変更
+
+	// ボスのHPバー描画などで使用
+	float GetBossHpRate();
 
 	// ★追加：敵の弾リストを外部（Hitクラス等）から参照できるようにする
 	std::vector<C_Bullet*>& GetEnemyBullets() { return m_enemyBullets; }
@@ -64,12 +75,31 @@ private:
 
 	std::vector<C_Bullet*> m_bullets;
 	std::vector<C_Bullet*> m_enemyBullets;
+	// GameScene.h
+	std::vector<C_BossBullet*> m_bossBullets;
 	std::vector<C_Orb*> m_orbs;
 	// ★追加：エフェクトのリスト
 	std::vector<std::shared_ptr<C_Effect>> m_effects;
 
 	KdTexture m_playerTex, m_hpTex, m_enemyTex, m_turretTex;
-	KdTexture m_bulletTex, m_enemyBulletTex;
+	KdTexture m_bulletTex, m_enemyBulletTex, m_eFollowBulletTex;
+
+	KdTexture m_hpGaugeTex;    // HPの中身（緑や赤のバー）
+	KdTexture m_hpFrameTex;    // HPの外枠
+
+	std::shared_ptr<C_Boss> m_boss = nullptr; // ポインタ管理の場合
+
+	KdTexture m_bosshpTex;
+	KdTexture m_bosshpFrameTex;
+	KdTexture m_bossTex;
+
+
+	const int HP_GAUGE_FULL_W = 272; // 画像の本来の横幅
+	const int HP_GAUGE_H = 21; // 画像の本来の縦幅	
+
+	KdTexture m_playerIconTex; // プレイヤーの顔アイコン
+
+	KdTexture m_bossBulletTex;   // ★ボスの弾用に追加！
 	KdTexture m_texOrbBlue, m_texOrbRed, m_texOrbYellow;
 	KdTexture m_parryTex; // パリィ用の円画像
 	KdTexture m_dodgeTex; // ★追加
@@ -93,8 +123,16 @@ private:
 
 	// 爆発管理用リスト
 	std::vector<std::shared_ptr<C_Explosion>> m_explosions;
+	// GameScene.h 内での定義
+	std::list<std::shared_ptr<F_Explosion>> m_explList;
 	// 爆発テクスチャ
 	KdTexture* m_texExplosion;
+	KdTexture* m_texFExplosion;
+
+
+	// --- private 内に追加 ---
+	bool m_bossSpawned = false;    // ボスが既に出現したか
+	bool m_isBossBattle = false;  // 現在ボス戦中か
 
 	float m_totalScrollX = 0.0f;
 	int m_spawnTimer = 0;
@@ -121,5 +159,8 @@ private:
 
 	// チャージマックスを1回だけ検知するためのフラグ
 	bool m_wasChargeMax = false;
+
+	int  m_waveStep = 0;          // 0:上列, 1:下列, 2:ボウリング, 3:ボス
+	bool m_isBossSpawned = false; // ボスが出たかどうか
 
 };

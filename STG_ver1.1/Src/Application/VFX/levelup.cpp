@@ -1,26 +1,7 @@
+
+
 #include "LevelUp.h"
-#include "Application/Player/player.h" // 座標取得のため
-
-void LevelUp::Start(const Math::Vector2& pos) {
-    m_pos = pos;
-    m_active = true;
-    m_frameIdx = 0; // 開始位置にリセット
-}
-
-//void LevelUp::Update() {
-//    if (!m_active) return;
-//
-//    // 時間経過でコマを進める
-//    m_frameIdx += m_anmSpeed;
-//
-//    // 最後のコマを超えたら消滅
-//    if (m_frameIdx >= m_maxFrame) {
-//        m_active = false;
-//    }
-//}
-
-
-
+#include "Application/Player/player.h"
 
 void LevelUp::Init(KdTexture* tex, C_Player* player) {
     m_pTex = tex;
@@ -28,18 +9,39 @@ void LevelUp::Init(KdTexture* tex, C_Player* player) {
     m_active = false;
 }
 
+void LevelUp::Start() {
+    m_active = true;
+    m_currentFrame = 0;
+    m_animeTimer = 0;
+
+    if (m_player) {
+        m_pos = m_player->GetPos();
+    }
+}
+
+
+
 void LevelUp::Update() {
     if (!m_active) return;
 
-    // アニメーション更新
-    m_frameIdx += m_anmSpeed;
+    // プレイヤー追従
+    if (m_player) m_pos = m_player->GetPos();
 
-    if (m_frameIdx >= m_maxFrame) {
-        if (m_isLoop) {
-            m_frameIdx = 0; // ★ループ：最後まで行ったら最初に戻る
-        }
-        else {
-            m_active = false; // ループしない場合は終了
+    m_animeTimer++;
+    if (m_animeTimer >= ANIME_SPEED) {
+        m_animeTimer = 0;
+        m_currentFrame++;
+
+        if (m_currentFrame >= FRAME_MAX) {
+            // ★ここがポイント
+            if (m_shouldStop) {
+                // ストップ指示が出ていれば、ループせずに終了
+                m_active = false;
+            }
+            else {
+                // 指示がなければ 0 に戻してループ
+                m_currentFrame = 0;
+            }
         }
     }
 }
@@ -47,21 +49,25 @@ void LevelUp::Update() {
 void LevelUp::DrawSprite() {
     if (!m_active || !m_pTex || !m_player) return;
 
-    // --- 最新のプレイヤー座標を取得して描画 ---
-    Math::Vector2 pos = m_player->GetPos();
-
+    // 1. 加算合成（光る演出）に設定
     D3D.SetBlendState(BlendMode::Add);
 
-    int srcX = (int)m_frameIdx * m_pieceSize;
-    Math::Rectangle srcRect = { srcX, 0, m_pieceSize, m_pieceSize };
+    // コマ数から切り出し位置(srcRect)を計算
+    int x = (m_currentFrame % COLS) * CHIP_SIZE;
+    int y = (m_currentFrame / COLS) * CHIP_SIZE;
+    Math::Rectangle srcRect = { x, y, CHIP_SIZE, CHIP_SIZE };
 
-    // 2.0倍程度がおすすめ
-    Math::Matrix mat = Math::Matrix::CreateScale(2.0f) * Math::Matrix::CreateTranslation(pos.x, pos.y, 0);
+    // 行列作成 (Scaleは新しい画像の見栄えに合わせて 1.0f ～ 3.0f で調整してください)
+    Math::Matrix mat = Math::Matrix::CreateScale(2.5f) *
+        Math::Matrix::CreateTranslation(m_pos.x, m_pos.y, 0);
 
     SHADER.m_spriteShader.SetMatrix(mat);
+
+    // 描画
     Math::Color color = { 1.0f, 1.0f, 1.0f, 1.0f };
     SHADER.m_spriteShader.DrawTex(m_pTex, 0, 0, &srcRect, &color);
 
+    // 2. ブレンドモードを通常に戻す
     D3D.SetBlendState(BlendMode::Alpha);
     SHADER.m_spriteShader.SetMatrix(Math::Matrix::Identity);
 }

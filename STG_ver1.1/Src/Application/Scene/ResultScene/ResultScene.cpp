@@ -13,20 +13,49 @@ void ResultScene::Init()
     m_retryButtonTex.Load("Texture/Scene/Retry.png");
     m_titleButtonTex.Load("Texture/Scene/Home.png");
     m_selectButtonTex.Load("Texture/UI/Button_Select.png");
+	m_numberTex.Load("Texture/VFX/n3.png"); // 数字フォントテクスチャ（0-9が横に並んでいるもの）
+    m_rankTex.Load("Texture/Scene/rank3.png");
+	m_resultTex.Load("Texture/Scene/Result.png");
+
 
     // 2. ボタンの配置設定
-    m_buttons[0] = { { -400, -250 }, { 128, 128 }, &m_retryButtonTex };
-    m_buttons[1] = { {    0, -250 }, { 128, 128 }, &m_titleButtonTex };
-    m_buttons[2] = { {  400, -250 }, { 128, 128 }, &m_selectButtonTex };
+    m_buttons[0] = { { -250, -250 }, { 128, 128 }, &m_retryButtonTex };
+    m_buttons[1] = { { 250, -250 }, { 128, 128 }, &m_titleButtonTex };
+    //m_buttons[2] = { {   }, { 128, 128 }, &m_selectButtonTex };
+
+    // SceneManagerに預けておいたスコアを受け取る
+    m_finalScore = SceneManager::GetInstance().GetFinalScore();
+
+    // 演出用の変数もリセット
+    m_displayScore = 0.0f;
 
     // 各種変数リセット
     m_starAnimeTimer = 0.0f;
     for (int i = 0; i < 3; i++) { m_starScales[i] = 0.0f; m_isStarSoundPlayed[i] = false; }
+
+    // ★ここを追加！ シーンが始まる瞬間に 20フレーム（約0.3秒）の猶予を作る
+    m_inputWaitTimer = 20;
+
+    // 前回フレームの入力状態もリセットしておく
+    m_prevEnter = false;
+    m_prevSpace = false;
 }
 
 
 
 void ResultScene::Update() {
+
+    // 1. ガードタイマー：シーン遷移直後の誤爆を物理的に防ぐ
+    if (m_inputWaitTimer > 0) {
+        m_inputWaitTimer--;
+
+        // タイマー動作中は、現在の入力状態を「押されていた」ことにして保存し、
+        // タイマー明けの瞬間に「押しっぱなし」と判定されないようにする
+        m_prevEnter = (GetAsyncKeyState(VK_RETURN) & 0x8000);
+        m_prevSpace = (GetAsyncKeyState(VK_SPACE) & 0x8000);
+        return;
+    }
+
     // --- ADキー または 左右キー で選択切り替え ---
     static bool s_isPushed = false;
     bool isKeyLeft = (GetAsyncKeyState('A') & 0x8000) || (GetAsyncKeyState(VK_LEFT) & 0x8000);
@@ -51,18 +80,24 @@ void ResultScene::Update() {
         s_isPushed = false;
     }
 
-    // --- 決定実行 (ENTER または SPACE) ---
-    if ((GetAsyncKeyState(VK_RETURN) & 0x8000) || (GetAsyncKeyState(VK_SPACE) & 0x8000)) {
-        // SCENE.GetSound()->SelectSE(); // 決定音
+    // 2. 決定判定：現在の入力を取得
+    bool currentEnter = (GetAsyncKeyState(VK_RETURN) & 0x8000);
+    bool currentSpace = (GetAsyncKeyState(VK_SPACE) & 0x8000);
+
+    // 3. 決定実行：「前回は離れていて、今は押されている」瞬間だけ反応
+    if ((currentEnter && !m_prevEnter) || (currentSpace && !m_prevSpace)) {
         switch (m_hoverIdx) {
-        case 0: SceneManager::GetInstance().SetNextScene(SceneManager::SceneType::Game); break;
+        case 0: SceneManager::GetInstance().SetNextScene(SceneManager::SceneType::Game);  break;
         case 1: SceneManager::GetInstance().SetNextScene(SceneManager::SceneType::Title); break;
-        case 2: /* ステージセレクト等があれば */ break;
+        case 2: /* ステージセレクト等 */ break;
         }
     }
 
-    // 星のアニメーション更新（ここはそのまま）
-    m_starAnimeTimer += 1.0f;
+    // 4. 次のフレームのために現在の状態を保存
+    m_prevEnter = currentEnter;
+    m_prevSpace = currentSpace;
+
+
     // ...
 }
 
@@ -74,17 +109,13 @@ void ResultScene::DrawSprite() {
 
     // 2. 星の描画（ここは変更なし）
     // ...
-     // 2. 星の描画
-    bool results[] = { m_isIronComplete, m_isNoDamage, m_isTimeClear };
-    for (int i = 0; i < 3; i++) {
-        float s = m_starScales[i];
-        Math::Matrix starMat = Math::Matrix::CreateScale(s, s, 1.0f) * Math::Matrix::CreateTranslation(-200.0f + (i * 200.0f), 50.0f, 0);
+    // ロゴを少し上に配置（y = 200 あたり）
+    Math::Matrix logoMat = Math::Matrix::CreateScale(1.0f, 1.0f, 1.0f) *
+        Math::Matrix::CreateTranslation(0, 200.0f, 0);
 
-        KdShaderManager::GetInstance().m_spriteShader.SetMatrix(starMat);
-        KdTexture* pTex = results[i] ? &m_starTex : &m_emptyStarTex;
-        KdShaderManager::GetInstance().m_spriteShader.DrawTex(pTex, 0, 0, 96, 96);
-    }
-
+    KdShaderManager::GetInstance().m_spriteShader.SetMatrix(logoMat);
+    // ロゴ全体を表示するので srcRect は nullptr でOK
+    KdShaderManager::GetInstance().m_spriteShader.DrawTex(&m_resultTex, 0, 0, nullptr);
 
     // 3. ボタンの描画
     for (int i = 0; i < 3; i++) {
@@ -101,6 +132,76 @@ void ResultScene::DrawSprite() {
         // 重要：行列で座標指定しているので、DrawTexの引数は 0, 0 にする
         KdShaderManager::GetInstance().m_spriteShader.DrawTex(m_buttons[i].normalTex, 0, 0, 128, 128, nullptr, &color);
     }
+
+
+
+    // ResultScene.cpp / DrawSprite内
+    if (m_displayScore < m_finalScore) {
+        float diff = (float)m_finalScore - m_displayScore;
+
+        // fmaxf を使って、差分の15%か、最低でも10.0f増えるようにする
+        m_displayScore += fmaxf(diff * 0.15f, 10.0f);
+
+        if (m_displayScore > m_finalScore) m_displayScore = (float)m_finalScore;
+    }
+
+
+    std::string scoreStr = std::to_string((int)m_displayScore);
+    int scoreLen = (int)scoreStr.length();
+
+
+    // 1. スケールに合わせた1文字分の幅を定義
+    float fontSize = 56.0f; // 7px * 8.0f = 56px
+
+    // 2. 描画位置の基準を新しい幅で再計算（中央揃え）
+    float startX = -((scoreLen * fontSize) / 2.0f) + (fontSize / 2.0f);
+    float yPos = -90.0f;
+
+    for (int i = 0; i < scoreLen; i++) {
+        int num = scoreStr[i] - '0';
+
+        // 切り抜き範囲は元の画像サイズ（7px）のまま
+        Math::Rectangle srcRect = { num * 7, 0, 7, 7 };
+
+        // 行列の設定
+        // スケールを 8.0f に、ずらし幅を fontSize (56.0f) に合わせる
+        Math::Matrix scoreMat = Math::Matrix::CreateScale(8.0f, 8.0f, 1.0f) *
+            Math::Matrix::CreateTranslation(startX + (i * fontSize), yPos, 0);
+
+        KdShaderManager::GetInstance().m_spriteShader.SetMatrix(scoreMat);
+
+        // 描画
+        KdShaderManager::GetInstance().m_spriteShader.DrawTex(&m_numberTex, 0, 0, &srcRect);
+    }
+
+    {
+        // スコア判定（ここは共通）
+        int rankIdx = 5;
+        if (m_finalScore >= 10000) rankIdx = 0; // S
+        else if (m_finalScore >= 8000)  rankIdx = 1; // A
+        else if (m_finalScore >= 6000)  rankIdx = 2; // B
+        else if (m_finalScore >= 4000)  rankIdx = 3; // C
+        else if (m_finalScore >= 2000)  rankIdx = 4; // D
+
+        // --- ここでサイズを直接指定 ---
+        // 画像を開いてプロパティを確認し、その数値をここに入れてください
+        float texW = 225.0f; // 仮の横幅
+        float texH = 42.0f;  // 仮の縦幅
+
+        int chipW = (int)texW / 6;
+        int chipH = (int)texH;
+        Math::Rectangle srcRect = { rankIdx * chipW, 0, chipW, chipH };
+
+        // 表示位置の設定
+        Math::Matrix rankMat = Math::Matrix::CreateScale(2.5f, 2.5f, 1.0f) *
+            Math::Matrix::CreateTranslation(0, 65.0f, 0);
+
+        KdShaderManager::GetInstance().m_spriteShader.SetMatrix(rankMat);
+        KdShaderManager::GetInstance().m_spriteShader.DrawTex(&m_rankTex, 0, 0, &srcRect);
+        KdShaderManager::GetInstance().m_spriteShader.SetMatrix(Math::Matrix::Identity);
+    }
+
+
 
     // 行列をリセット
     KdShaderManager::GetInstance().m_spriteShader.SetMatrix(Math::Matrix::Identity);

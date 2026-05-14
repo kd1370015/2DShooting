@@ -8,7 +8,9 @@ public:
     C_Bullet() {}
     ~C_Bullet() {}
 
-    void Init(Math::Vector2 pos, float angle);
+    //void Init(Math::Vector2 pos, float angle);
+    // 引数に isReflected を追加（デフォルトは false = 通常弾）
+    void Init(Math::Vector2 pos, float angle, bool isReflected = false);
     void Update(float timeScale = 1.0f);
     void Draw(KdTexture* tex);
 
@@ -32,8 +34,20 @@ public:
     void AddReflectCount() { m_reflectCount++; }
     int GetReflectCount() const { return m_reflectCount; }
 
+    // 反射弾フラグのセットと取得
+    void SetIsReflected(bool flag) { m_isReflected = flag; }
+    bool IsReflected() const { return m_isReflected; }
+
     // 敵の弾かどうかを設定する関数
     void SetIsEnemy(bool isEnemy) { m_isEnemy = isEnemy; }
+
+    // ★追加：強化弾フラグのセットと取得
+    void SetIsPoweredUp(bool flag) { m_isPoweredUp = flag; }
+    bool IsPoweredUp() const { return m_isPoweredUp; }
+
+    // ダメージ量を設定・取得する関数
+    void SetDamage(int dmg) { m_damage = dmg; }
+    int  GetDamage() const { return m_damage; }
 
     // ★これを追加（座標を取得できるようにする）
     const Math::Vector2& GetPos() const { return m_pos; }
@@ -47,6 +61,14 @@ private:
     bool m_isDodged = false;
     int m_reflectCount = 0; // ★追加：現在の反射回数
 
+    // ... 既存の変数 ...
+    bool m_isReflected = false; // デフォルトは false (自機弾)
+    // ... 既存の変数 ...
+    bool m_isPoweredUp = false; // 発射時に強化状態だったか
+
     bool m_isEnemy = false; // デフォルトは自機の弾(false)
     float m_angle = 0.0f;   // 角度も持っておくと便利
+
+    // デフォルトのダメージを 1 にしておく
+    int m_damage = 1;
 };

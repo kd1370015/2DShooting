@@ -58,7 +58,7 @@ private:
     Math::Vector2 m_demoPlayerPos; // デモプレイヤーの座標
 
     // 各アクションのデモ用変数
-    Math::Vector2 m_movePos = { 150, 50 }; // WASD移動のデモ座標
+    Math::Vector2 m_movePos = { 150, 0 }; // WASD移動のデモ座標
     float m_barrierAlpha = 0.0f;           // バリアの透明度
     float m_dodgeScale = 1.0f;             // 回避中の膨らみ
 

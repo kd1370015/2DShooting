@@ -9,10 +9,15 @@ void TitleScene::Init()
 
     //while (ShowCursor(TRUE) < 0);
 
-    m_tex.Load("Texture/Scene/title_1.png");
+    //m_tex.Load("Texture/Back/moon/1.png");
+
+    m_tex.Load("Texture/Scene/TitleBack.png");
+    m_pressTex.Load("Texture/Scene/press2.png");
+
     m_enterTex.Load("Texture/Scene/Play.png");
-    m_optionTex.Load("Texture/Scene/Option_button.png"); // ★Option用の画像をロード
+    m_optionTex.Load("Texture/Scene/Option_keyboard.png"); // ★Option用の画像をロード
     m_exitTex.Load("Texture/Scene/Exit_button.png");       // 96px想定
+	m_titleTex.Load("Texture/Scene/TitleLogo.png");     // タイトルロゴ用の画像をロード
 
     float buttonY = -250.0f;
     // 中央のPlayを基準に左右に配置
@@ -21,6 +26,10 @@ void TitleScene::Init()
     m_btnExit.pos = { 300, buttonY };
 
     m_selectIdx = 1; // 最初は中央のPlayを選択状態にする
+
+    // 押されているなら「前回から押されていた」ことにして暴発を防ぐ
+    m_oldSpaceKey = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0;
+    m_oldEnterKey = (GetAsyncKeyState(VK_RETURN) & 0x8000) != 0;
 }
 
 
@@ -30,6 +39,17 @@ void TitleScene::Init()
 
 void TitleScene::Update()
 {
+
+
+    // 背景のスクロール速度（1.5fは好みで調整してください）
+    m_bgPosX -= 1.5f;
+
+    // 画像が完全に左に消えたらリセット（画像サイズが1280pxの場合）
+    if (m_bgPosX <= -1280.0f)
+    {
+        m_bgPosX = 0.0f;
+    }
+
 
     if (m_option) {
         m_option->Update();
@@ -44,7 +64,7 @@ void TitleScene::Update()
         return; // Optionが開いている間はタイトルの更新はしない
     }
 
-    //m_timer += 0.08f;
+    m_timer += 0.05f;
     //m_alpha = (sin(m_timer) * 0.3f) + 0.7f;
 
     // --- 左右キーでの選択切り替え ---
@@ -102,37 +122,35 @@ void TitleScene::Update()
 }
 
 
-//void TitleScene::DrawSprite()
-//{
-//    SHADER.m_spriteShader.DrawTex(&m_tex, 0, 0);
-//
-//    // ボタン情報を配列風に回すとスッキリ書けます
-//    TitleButton* btns[] = { &m_optionBtn, &m_playButton, &m_btnExit };
-//    KdTexture* texs[] = { &m_optionTex, &m_enterTex, &m_exitTex };
-//
-//    for (int i = 0; i < 3; ++i) {
-//        bool isHover = (m_selectIdx == i);
-//        float scale = isHover ? 1.2f : 1.0f;
-//
-//        // Playボタン(i=1)は元々大きいので、さらに強調
-//        if (i == 1 && !isHover) scale = 1.1f;
-//
-//        Math::Color color = isHover ? Math::Color{ 1, 1, 1, m_alpha } : Math::Color{ 0.6f, 0.6f, 0.6f, 1.0f };
-//
-//        Math::Matrix mat = Math::Matrix::CreateScale(scale) * Math::Matrix::CreateTranslation(btns[i]->pos.x, btns[i]->pos.y, 0);
-//        SHADER.m_spriteShader.SetMatrix(mat);
-//        SHADER.m_spriteShader.DrawTex(texs[i], 0, 0, nullptr, &color);
-//    }
-//
-//    SHADER.m_spriteShader.SetMatrix(Math::Matrix::Identity);
-//
-//    if (m_option) m_option->Draw();
-//}
 
 void TitleScene::DrawSprite()
 {
-    // 背景描画
+
+    // 1枚目：現在の座標に表示
+    Math::Matrix bgMat1 = Math::Matrix::CreateTranslation(m_bgPosX, 0, 0);
+    KdShaderManager::GetInstance().m_spriteShader.SetMatrix(bgMat1);
     KdShaderManager::GetInstance().m_spriteShader.DrawTex(&m_tex, 0, 0);
+
+    // 2枚目：1枚目のすぐ右隣（画像の横幅分だけずらした位置）に表示
+    // 1280.0f の部分は、m_tex の横幅に合わせて調整してください
+    Math::Matrix bgMat2 = Math::Matrix::CreateTranslation(m_bgPosX + 1280.0f, 0, 0);
+    KdShaderManager::GetInstance().m_spriteShader.SetMatrix(bgMat2);
+    KdShaderManager::GetInstance().m_spriteShader.DrawTex(&m_tex, 0, 0);
+
+    // 行列をリセットして、ボタンやロゴの描画へ移る
+    KdShaderManager::GetInstance().m_spriteShader.SetMatrix(Math::Matrix::Identity);
+
+    // --- 「PRESS SPACE」の点滅描画 ---
+    float alpha = (sin(m_timer) * 0.35f) + 0.65f;
+
+    Math::Color pressColor = { 1.0f, 1.0f, 1.0f, alpha };
+
+    // ロゴとボタンの間（y= -100 くらい）に配置
+    Math::Matrix pressMat = Math::Matrix::CreateTranslation(0, -100.0f, 0);
+    KdShaderManager::GetInstance().m_spriteShader.SetMatrix(pressMat);
+    KdShaderManager::GetInstance().m_spriteShader.DrawTex(&m_pressTex, 0, 0, nullptr, &pressColor);
+
+
 
     // ボタンの情報を配列で管理
     TitleButton* btns[] = { &m_optionBtn, &m_playButton, &m_btnExit };
@@ -172,6 +190,13 @@ void TitleScene::DrawSprite()
         // 常にアルファブレンド（通常）に戻しておく
         D3D.SetBlendState(BlendMode::Alpha);
     }
+
+
+    //// --- 3. タイトルロゴの描画（一番手前） ---
+    //// ここで m_titleTex を使用します。座標 (0, 250) は画面中央より少し上のイメージです。
+    Math::Matrix logoMat = Math::Matrix::CreateTranslation(0, 100.0f, 0);
+    KdShaderManager::GetInstance().m_spriteShader.SetMatrix(logoMat);
+    KdShaderManager::GetInstance().m_spriteShader.DrawTex(&m_titleTex, 0, 0);
 
     // 行列リセット
     KdShaderManager::GetInstance().m_spriteShader.SetMatrix(Math::Matrix::Identity);

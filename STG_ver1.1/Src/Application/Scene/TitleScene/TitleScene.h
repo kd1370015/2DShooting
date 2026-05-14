@@ -19,6 +19,8 @@ private:
     KdTexture m_enterTex;
     KdTexture m_optionTex; // ★追加：Optionボタン画像用
     KdTexture m_exitTex;    // Exit用 (★追加)
+	KdTexture m_titleTex;   // タイトルロゴ用 (★追加)
+    KdTexture m_pressTex;
 
 
 
@@ -28,6 +30,8 @@ private:
 
     float m_alpha = 0.0f;
     float m_timer = 0.0f;
+
+    float m_bgPosX = 0.0f;
 
     // --- 追加：マウス操作用 ---
     struct TitleButton {

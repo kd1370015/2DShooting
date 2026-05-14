@@ -24,8 +24,17 @@ public:
 	void DrawSprite()	override;
 	void Release()		override;
 
-	// 外部（ゲーム本編）から結果を受け取るための関数
-	void SetStarResults(bool iron, bool noDamage, bool time);
+
+    // ResultScene.h に追加
+    void SetScore(int score) { m_finalScore = score; }
+
+    // もしくは SetStarResults を拡張
+    void SetStarResults(bool iron, bool noDamage, bool time, int score) {
+        m_isIronComplete = iron;
+        m_isNoDamage = noDamage;
+        m_isTimeClear = time;
+        m_finalScore = score;
+    }
 
 private:
 	//KdTexture m_tex;
@@ -52,6 +61,8 @@ private:
 
     KdTexture m_starTex;
     KdTexture m_emptyStarTex;
+    KdTexture m_rankTex; // rank2.png 用
+    KdTexture m_resultTex;
 
     // ボタン用
     KdTexture m_retryButtonTex;
@@ -60,4 +71,17 @@ private:
     ClearButton m_buttons[3];
     // 修正箇所：初期値を -1 から 0 に変更（常にどれかが選択されている状態にするため）
     int m_hoverIdx = 0;
+
+    int m_finalScore = 0;           // 最終スコア保存用
+    KdTexture m_numberTex;          // 数字フォント画像（0-9が並んだもの）
+
+    // スコアを少しずつ増やす演出用（任意）
+    float m_displayScore = 0.0f;
+
+    // private メンバ変数に追加
+    bool m_prevEnter = false;
+    bool m_prevSpace = false;
+
+    // privateメンバ変数
+    int m_inputWaitTimer = 20; // 遷移直後の20フレームは入力を受け付けない
 };

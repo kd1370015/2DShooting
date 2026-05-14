@@ -34,7 +34,7 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	// ウィンドウ作成
 	//===================================================================
-	if (m_window.Create(w, h, "DirectX", "Window") == false) {
+	if (m_window.Create(w, h, "REFLECT RAIDER", "Window") == false) {
 		MessageBoxA(nullptr, "ウィンドウ作成に失敗", "エラー", MB_OK);
 		return false;
 	}
@@ -258,6 +258,14 @@ void Application::Execute()
 			baseTime = st;
 			count = 0;
 		}
+
+		// --- タイトルバーへの表示 ---
+		// もし m_window.SetWindowTitle がエラーになる場合は、以下の SetWindowTextA を試してください
+		std::string title = "REFLECT RAIDER | FPS: " + std::to_string(m_fps);
+
+		// 現在アクティブなウィンドウ（自分のゲーム画面）のタイトルを書き換える
+		SetWindowTextA(GetActiveWindow(), title.c_str());
+
 
 	}
 

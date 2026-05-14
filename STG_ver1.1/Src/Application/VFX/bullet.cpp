@@ -1,72 +1,26 @@
 #include "Bullet.h"
 #include "Application/Player/player.h" // ここに定義があるか確認
 
-void C_Bullet::Init(Math::Vector2 pos, float angle)
+
+void C_Bullet::Init(Math::Vector2 pos, float angle, bool isReflected)
 {
     m_pos = pos;
-    float speed = 10.0f; // 弾の速さ
+    m_isReflected = isReflected; // フラグを保存
 
-    // float bulletAngle = angle + DirectX::XM_PIDIV2;
+    // ★ スピードの切り分け
+    float speed = 10.0f; // 通常の自機弾の速さ
+    if (m_isReflected) {
+        speed = 20.0f;   // パリィ反射弾は2倍速く！
+    }
 
-    // 自機の画像補正で angle をいじっている場合、
-    // ここで弾の飛ぶ方向も合わせる必要があります。
-    // もし弾が変な方向に飛ぶなら、ここの angle にも 
-    // 自機と同じオフセット（DirectX::XM_PIDIV2など）を足してください。
     m_move.x = cosf(angle) * speed;
     m_move.y = sinf(angle) * speed;
 
     m_alive = true;
-    // ... 既存の初期化 ...
-    m_isDodged = false; // 最初は必ず false
-
-    // ★ 生成した瞬間の向き（右向きなら0度、左向きなら180度）をセット
+    m_isDodged = false;
     m_angle = atan2f(m_move.y, m_move.x);
 }
 
-//void C_Bullet::Update()
-//{
-//    if (!m_alive) return;
-//
-//    bool isReflected = false;
-//
-//    // 1. 移動を反映
-//    m_pos += m_move;
-//
-//    // --- ★ここから：上下の壁での反射処理 ---
-//    // 縦の範囲を少し抑える（例：±300）
-//    float limitY = 275.0f;
-//
-//    if (m_pos.y > limitY) {
-//        m_pos.y = limitY;    // 埋まらないように位置を固定
-//        m_move.y *= -1.0f;   // Y方向の移動量を反転！
-//        isReflected = true;
-//    }
-//    else if (m_pos.y < -limitY) {
-//        m_pos.y = -limitY;   // 埋まらないように位置を固定
-//        m_move.y *= -1.0f;   // Y方向の移動量を反転！
-//        isReflected = true;
-//    }
-//
-//    // ★反射した場合の処理
-//    if (isReflected) {
-//        AddReflectCount(); // 反射回数を＋1
-//
-//        // 「2回反射した後、次に壁に当たったら消える」＝ 3回目の接触で消去
-//        if (GetReflectCount() >= 3) {
-//            SetAlive(false);
-//        }
-//    }
-//
-//    // ----------------------------------------
-//
-//    // 2. 左右の画面外に出たら消す（壁は上下だけ、左右は消滅させるのが一般的）
-//    if (m_pos.x < -700 || m_pos.x > 700)
-//    {
-//        m_alive = false;
-//    }
-//
-//
-//}
 
 void C_Bullet::Update(float timeScale)
 {
@@ -112,27 +66,37 @@ void C_Bullet::Update(float timeScale)
 }
 
 
+
 void C_Bullet::Draw(KdTexture* tex)
 {
     if (!m_alive || !tex) return;
 
     // --- 1. 行列の組み立て ---
-    // scaleX = -1.0f などの判定は不要です！ 
-    // m_angle（回転）がすべて解決してくれます。
-
-    // 回転行列（現在の進行方向を向く）
+    // 回転（進行方向）
     Math::Matrix rotMat = Math::Matrix::CreateRotationZ(m_angle);
-
-    // 移動行列
+    // 位置
     Math::Matrix transMat = Math::Matrix::CreateTranslation(m_pos.x, m_pos.y, 0);
 
-    // 合成：回転してから移動
+    // 合成
     Math::Matrix mat = rotMat * transMat;
 
     // --- 2. 実行 ---
     SHADER.m_spriteShader.SetMatrix(mat);
 
-    Math::Rectangle srcRect = { 0, 0, 64, 36 };
+    // --- 3. サイズ（切り抜き範囲）の決定 ---
+    Math::Rectangle srcRect;
+
+    if (m_isReflected) {
+        // ★反射弾（23.png）のピクセルサイズに合わせて数値を書き換えてください
+        // 例: 画像が横48px、縦48pxの場合
+        srcRect = { 0, 0, 80, 33 };
+    }
+    else {
+        // 通常の自機弾（11.png）のサイズ
+        srcRect = { 0, 0, 64, 36 };
+    }
+
+    // 第2引数、第3引数を 0 にすることで、画像の中心で回転・描画されます
     SHADER.m_spriteShader.DrawTex(tex, 0, 0, &srcRect);
 
     // 後片付け

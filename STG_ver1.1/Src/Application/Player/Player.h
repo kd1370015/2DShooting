@@ -63,7 +63,7 @@ public:
 
 	void Heal(int amount) {
 		m_hp += amount;
-		if (m_hp > 4) m_hp = 4; // 最大HPを超えないように固定
+		if (m_hp > 5) m_hp = 5; // 最大HPを超えないように固定
 	}
 
 	bool CanHeal() const { return m_canHeal; }
@@ -98,7 +98,6 @@ public:
 	void SetDodgeTex(KdTexture* tex) { m_dodgeTex = tex; }
 	// パリィ用テクスチャをセットする関数
 	void SetParryAnimTex(KdTexture* tex) { m_parryAnimTex = tex; }
-	void SetTurboTex(KdTexture* tex) { m_turboAnimTex = tex; }
 
 
 private:
@@ -111,8 +110,8 @@ private:
 	float m_scrollMin;
 	float m_scrollMax;
 
-	int m_hp = 4;       // 現在のHP
-	int m_maxHp = 4;    // 最大HP
+	int m_hp = 5;       // 現在のHP
+	int m_maxHp = 5;    // 最大HP
 	int m_invincibleTimer = 0; // 無敵タイマー
 
 	float INVINCIBLE_TIME = 60.0f;
@@ -131,10 +130,11 @@ private:
 	// ... 既存の変数 ...
 	KdTexture* m_parryAnimTex = nullptr; // ★追加：SF01b_strip60.png用
 
+
+	KdTexture m_turboTex[4]; // 4枚分のテクスチャ配列
+	float     m_turboFrame;  // アニメーション用フレーム
+
 	// ★追加：ターボ（炎）アニメーション用変数
-	KdTexture* m_turboAnimTex = nullptr; // image_4.png用
-	int        m_turboAnimStep;         // 現在のコマ
-	int        m_turboAnimTimer;        // アニメーション用タイマー
 
 
 	bool m_alive;		//生存フラグ

@@ -234,6 +234,15 @@
     <ClInclude Include="Src\Application\Scene\TitleScene\option.h">
       <Filter>Src\Application\Scene\TitleScene</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Enemy\boss.h">
+      <Filter>Src\Application\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Enemy\BossBullet.h">
+      <Filter>Src\Application\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\VFX\Fexpl.h">
+      <Filter>Src\Application\VFX</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -358,6 +367,15 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Scene\TitleScene\option.cpp">
       <Filter>Src\Application\Scene\TitleScene</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Enemy\boss.cpp">
+      <Filter>Src\Application\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Enemy\BossBullet.cpp">
+      <Filter>Src\Application\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\VFX\Fexpl.cpp">
+      <Filter>Src\Application\VFX</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

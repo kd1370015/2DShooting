@@ -29,20 +29,31 @@ void Score::Update()
 
 }
 
+
 void Score::DrawSprite()
 {
+    // --- 1. 行列をリセットし、スコア用の位置を設定 ---
+    // posX, posY は表示したい画面上の座標に調整してください
+    float posX = 400.0f;
+    float posY = 320.0f;
 
-	//スコア表示
-	for (int i = 0; i < maxDigits; ++i)
-	{
-		Math::Rectangle rc = { 7 * m_digits[i], 0, 7, 7 };
+    // スコア専用の行列を作成（以前の描画の影響を断ち切る）
+    Math::Matrix mat = Math::Matrix::CreateTranslation(posX, posY, 0);
+    KdShaderManager::GetInstance().m_spriteShader.SetMatrix(mat);
 
-		float posX = 475;
+    // --- 2. スコアの各桁を描画 ---
+    for (int i = 0; i < maxDigits; ++i)
+    {
+        // 数字1つ分の切り抜き（画像に合わせて調整してください）
+        Math::Rectangle rc = { 7 * m_digits[i], 0, 7, 7 };
 
-		//桁別に表示(サイズを10倍にしています)
-		KdShaderManager::GetInstance().m_spriteShader.DrawTex(&m_tex, posX + i * 35, 0, 35, 35, &rc);
-	}
+        // DrawTexの引数を整理（posX + i * 35 は「行列」ではなくここでずらす）
+        // 第2引数、第3引数は「セットした行列(posX, posY)からの相対座標」になります
+        KdShaderManager::GetInstance().m_spriteShader.DrawTex(&m_tex, i * 35, 0, 35, 35, &rc);
+    }
 
+    // --- 3. 最後にリセット（お作法） ---
+    KdShaderManager::GetInstance().m_spriteShader.SetMatrix(Math::Matrix::Identity);
 }
 
 void Score::Release()

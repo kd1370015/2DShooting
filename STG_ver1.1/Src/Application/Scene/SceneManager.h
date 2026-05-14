@@ -33,6 +33,8 @@ public:
 	}
 
 	// SceneManagerに現在のシーンを返す関数を作る
+	// 現在のシーンを取得する関数を追加
+	std::shared_ptr<BaseScene> GetCurrentScene() const { return m_currentScene; }
 	
 	// スコアをセットする関数
 	void SetFinalScore(int _score) { m_finalScore = _score; }

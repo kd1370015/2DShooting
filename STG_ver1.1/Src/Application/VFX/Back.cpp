@@ -8,18 +8,30 @@ struct StageBackConfig {
 };
 
 static const StageBackConfig kStageConfigs[] = {
-    {
-        4, // ★ 6から4に変更（実際に使う数に合わせる）
+    //{
+    //    4, // ★ 6から4に変更（実際に使う数に合わせる）
+    //    {
+
+    //        "Texture/Back/Sky/4.png",
+    //        "Texture/Back/Sky/3.png",
+    //        "Texture/Back/Sky/2.png",
+    //        "Texture/Back/Sky/1.png",
+    //        nullptr, nullptr, nullptr, nullptr, nullptr // 残りはnullptrで埋める
+    //    },
+    //// 視差係数も4つにする。残りは0で埋める
+    //{ 1.0f, 0.75f, 0.5f, 0.25f, 0, 0, 0, 0, 0 }
+
+        {
+        1, // ★ 6から4に変更（実際に使う数に合わせる）
         {
 
-            "Texture/Back/Sky/4.png",
-            "Texture/Back/Sky/3.png",
-            "Texture/Back/Sky/2.png",
-            "Texture/Back/Sky/1.png",
-            nullptr, nullptr, nullptr, nullptr, nullptr // 残りはnullptrで埋める
+            /*"Texture/Back/star/1.png",*/
+            "Texture/Scene/TitleBack.png",
+            nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr // 残りはnullptrで埋める
         },
-    // 視差係数も4つにする。残りは0で埋める
-    { 1.0f, 0.75f, 0.5f, 0.25f, 0, 0, 0, 0, 0 }
+            // 視差係数も4つにする。残りは0で埋める
+            { 0.5f,0, 0, 0, 0, 0, 0,0 }
+
 },
 };
 void C_Back::Init(int stageIdx)

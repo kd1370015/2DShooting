@@ -26,6 +26,7 @@ public:
 
 	// ゲームウィンドウクラス
 	KdGameWindow		m_window;
+	
 
 	// FPS制御
 	int				m_fps = 0;					// 現在のFPS値

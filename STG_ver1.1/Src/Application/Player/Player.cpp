@@ -14,7 +14,34 @@ void C_Player::Draw()
 {
 	if (!m_alive || !m_tex) return;
 
+
+	// 現在のアニメーション枠（0, 1, 2, 3）を取得
+	int frameIdx = (int)m_turboFrame;
+
+	// --- 1. ターボの描画（本体の後ろ） ---
+	// 雑魚敵の進行方向（左）に合わせて、右側にターボを表示
+	// スケールは 1.0f（または敵のサイズに合わせて調整）
+	Math::Matrix turboScale = Math::Matrix::CreateScale(1.0f, 1.0f, 1.0f);
+	// 右に 30px ほどずらして配置
+	Math::Matrix turboTrans = Math::Matrix::CreateTranslation(m_pos.x - 25.0f, m_pos.y, 0.05f); // 0.05fで少し奥へ
+
+	SHADER.m_spriteShader.SetMatrix(turboScale * turboTrans);
+
+	Math::Rectangle turboRect = { 0, 0, 64, 64 };
+	// 配列の画像を描画
+	SHADER.m_spriteShader.DrawTex(&m_turboTex[frameIdx], 0, 0, &turboRect);
+
+
 	Math::Color drawColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+	// --- ★点滅処理の追加 ---
+	if (m_invincibleTimer > 0) {
+		// タイマーを10で割った余りを見ることで、10フレームごとに表示/非表示を切り替える
+		// 数値を小さくする（例: % 4）と点滅が速くなります
+		if ((m_invincibleTimer / 5) % 2 == 0) {
+			drawColor.A(0.3f); // 半透明（または 0.0f で完全に消す）
+		}
+	}
 
 	// 自機のベース行列（位置・回転）
 	Math::Matrix rot = Math::Matrix::CreateRotationZ(m_angle - DirectX::XM_PIDIV2);
@@ -103,25 +130,26 @@ void C_Player::Update()
 	// 座標確定処理
 	m_pos += m_move;
 
-	// --- 移動制限の修正 ---
-	float limitX = (1280.0f / 2.0f) - 32.0f;
-	// ★ここを弾の反射位置(300)に合わせる
-	float limitY = 275.0f - 32.0f; // 32.0fは自機のサイズ補正
 
+	// --- 移動制限の修正 ---
+	float limitX = (1280.0f / 2.0f) - 32.0f; // 左側の限界（画面端）
+
+	// ★ 右側の限界を「真ん中の少し右（例：100）」に設定
+	float limitXPlus = 100.0f;
+
+	float limitY = 275.0f - 32.0f;
+
+	// Y方向の制限
 	if (m_pos.y > limitY) m_pos.y = limitY;
 	if (m_pos.y < -limitY) m_pos.y = -limitY;
-	// X方向の制限
-	if (m_pos.x > limitX) m_pos.x = limitX;
-	if (m_pos.x < -limitX) m_pos.x = -limitX;
+
+	// --- X方向の制限を個別に設定 ---
+	if (m_pos.x > limitXPlus) m_pos.x = limitXPlus; // 右は limitXPlus まで
+	if (m_pos.x < -limitX)    m_pos.x = -limitX;    // 左は 画面端 まで
 
 	if (m_invincibleTimer > 0) m_invincibleTimer--; // タイマーを減らす
 
 
-
-	// --- マウスの方向を向く処理 (C_Mouseから座標をもらう) ---
-	// ※Sceneクラスに GetMouse() が実装されている前提です
-// m_owner（GameScene*）経由でマウス座標を取得
-	//Math::Vector2 mousePos = m_owner->GetMouse()->GetPos();
 
 
 	// 自機の描画位置（画面上の相対位置）
@@ -129,14 +157,6 @@ void C_Player::Update()
 	float screenPosY = m_pos.y;
 
 
-	//// 3. その後、最新の m_pos を使って角度を計算する
-	//Math::Vector2 mousePos = m_owner->GetMouse()->GetPos();
-	//float diffX = mousePos.x - m_pos.x;
-	//float diffY = mousePos.y - m_pos.y;
-	//m_angle = atan2f(diffY, diffX);
-
-	////// 自機の画像補正（上向き素材の場合の-90度補正）
-	//float drawAngle = m_angle - DirectX::XM_PIDIV2;
 
 	m_angle = 0.0f;
 
@@ -165,6 +185,15 @@ void C_Player::Init()
 
 	// ... 既存の初期化 ...
 	m_dodgeTex = nullptr; // 必要に応じてGameSceneからセットするか、ここでLoadする
+
+	// --- 1～4の画像をロード ---
+	for (int i = 0; i < 4; i++) {
+		// i=0のとき"1"、i=3のとき"4"になるようにする
+		std::string fileName = "Texture/Player/P_T_" + std::to_string(i + 1) + ".png";
+		m_turboTex[i].Load(fileName);
+	}
+
+	m_turboFrame = 0.0f;
 
 
 }
@@ -203,33 +232,50 @@ void C_Player::Action()
 		m_move.y -= MovePow;
 	}
 
+	// 移動ベクトルの長さを計算
+	float length = sqrtf(m_move.x * m_move.x + m_move.y * m_move.y);
+
+	if (length > 0)
+	{
+		// 各成分を長さで割ることで、ベクトルの長さを1にする
+		m_move.x /= length;
+		m_move.y /= length;
+
+		// 最後に本来の移動速度（MovePow）を掛ける
+		m_move.x *= MovePow;
+		m_move.y *= MovePow;
+	}
+
+
 
 
 
 	// --- 回避 (Kキー) ---
 	bool nowKKey = (GetAsyncKeyState('K') & 0x8000) != 0;
 
-	// Kキーが押された瞬間 ＆ クールタイム中でない
-	if (nowKKey && !m_oldDodgeKey) {
+	// 【修正点】パリィ中でない（m_parryTimer <= 0）時だけ回避できる
+	if (nowKKey && !m_oldDodgeKey && m_parryTimer <= 0) {
 		if (m_dodgeCooldownTimer <= 0) {
-			m_dodgeTimer = 30;         // 回避時間
-			m_dodgeCooldownTimer = 50; // クールタイム
-			m_canDodgeCharge = true;   // チャージ可能フラグ
+			m_dodgeTimer = 30;
+			m_dodgeCooldownTimer = 50;
+			m_canDodgeCharge = true;
+
+			// もし回避した瞬間にパリィの判定が残っていたら消す（念のため）
+			m_parryTimer = 0;
 		}
 	}
-	m_oldDodgeKey = nowKKey; // 前回の状態を保存（旧 m_oldLButton）
+	m_oldDodgeKey = nowKKey;
 
-	// タイマーの更新
+	//// タイマーの更新
 	if (m_dodgeTimer > 0) m_dodgeTimer--;
 	if (m_dodgeCooldownTimer > 0) m_dodgeCooldownTimer--;
 
-	
 
 	// --- パリィ (Jキー) ---
 	bool nowJKey = (GetAsyncKeyState('J') & 0x8000) != 0;
 
-	// Jキーが押された瞬間
-	if (nowJKey && !m_oldParryKey) {
+	// 【修正点】回避中でない（m_dodgeTimer <= 0）時だけパリィできる
+	if (nowJKey && !m_oldParryKey && m_dodgeTimer <= 0) {
 		if (m_parryCooldownTimer <= 0 && m_parryTimer <= 0) {
 			m_parryTimer = PARRY_DURATION;
 			m_parryCooldownTimer = PARRY_COOLDOWN;
@@ -237,11 +283,10 @@ void C_Player::Action()
 			m_canHeal = true;
 			m_canShot = true;
 
-			// パリィエフェクトを生成
 			m_owner->AddEffect(m_pos, 2.0f);
 		}
 	}
-	m_oldParryKey = nowJKey; // 前回の状態を保存（旧 m_oldRButton）
+	m_oldParryKey = nowJKey;
 
 	if (m_parryCooldownTimer > 0) m_parryCooldownTimer--;
 	if (m_parryTimer > 0) m_parryTimer--;
@@ -264,19 +309,12 @@ void C_Player::Action()
 		}
 	}
 
-	// ★追加：ターボアニメーションの更新
-	if (m_turboAnimTex && m_alive) {
-		m_turboAnimTimer++;
-		if (m_turboAnimTimer >= TURBO_ANIM_SPEED) {
-			m_turboAnimTimer = 0;
-			m_turboAnimStep++;
-
-			// 最後のコマまで行ったら最初に戻す (ループ)
-			if (m_turboAnimStep >= TURBO_STEP_MAX) {
-				m_turboAnimStep = 0;
-			}
-		}
+	// 0.2f ずつ足すと、5フレームごとに画像が切り替わります
+	m_turboFrame += 0.2f;
+	if (m_turboFrame >= 4.0f) {
+		m_turboFrame = 0.0f;
 	}
+
 
 
 
@@ -324,6 +362,28 @@ void C_Player::ChargeEnergy(float amount) {
 
 
 
+//void C_Player::DecreaseHp(int damage) {
+//	// すでに死んでいる場合は、何度もシーン遷移を呼ばないようにガード
+//	if (m_hp <= 0) return;
+//
+//	// 無敵タイマー中ならダメージ処理を飛ばす
+//	if (m_invincibleTimer > 0) return;
+//
+//	// HPを減らす
+//	m_hp -= damage;
+//
+//	if (m_hp <= 0) {
+//		m_hp = 0;
+//		// 死亡した瞬間にシーン遷移を呼ぶ
+//		SceneManager::GetInstance().SetNextScene(SceneManager::SceneType::Result);
+//	}
+//	else {
+//		// 生きている時だけ無敵タイマーをセット
+//		m_invincibleTimer = 60;
+//	}
+//
+//}
+
 void C_Player::DecreaseHp(int damage) {
 	// すでに死んでいる場合は、何度もシーン遷移を呼ばないようにガード
 	if (m_hp <= 0) return;
@@ -336,6 +396,15 @@ void C_Player::DecreaseHp(int damage) {
 
 	if (m_hp <= 0) {
 		m_hp = 0;
+
+		// ★ここを修正：GetScoreManager() ではなく GetScore() を使う
+		if (m_owner) {
+			// GameSceneの m_score から現在のスコア数値を取得
+			// ※Scoreクラスに GetScore() という数値を返す関数がある前提です
+			int currentScore = m_owner->GetScore().GetScore();
+			SceneManager::GetInstance().SetFinalScore(currentScore);
+		}
+
 		// 死亡した瞬間にシーン遷移を呼ぶ
 		SceneManager::GetInstance().SetNextScene(SceneManager::SceneType::Result);
 	}
@@ -343,5 +412,4 @@ void C_Player::DecreaseHp(int damage) {
 		// 生きている時だけ無敵タイマーをセット
 		m_invincibleTimer = 60;
 	}
-
 }

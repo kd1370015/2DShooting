@@ -161,6 +161,8 @@
     <ClInclude Include="..\Library\tinygltf\tiny_gltf.h" />
     <ClInclude Include="Src\Application\Core\main.h" />
     <ClInclude Include="Src\Application\Core\Scene.h" />
+    <ClInclude Include="Src\Application\Enemy\boss.h" />
+    <ClInclude Include="Src\Application\Enemy\BossBullet.h" />
     <ClInclude Include="Src\Application\Enemy\Enemy.h" />
     <ClInclude Include="Src\Application\Enemy\EnemyManager.h" />
     <ClInclude Include="Src\Application\Enemy\EnemyTurret.h" />
@@ -180,6 +182,7 @@
     <ClInclude Include="Src\Application\VFX\charge.h" />
     <ClInclude Include="Src\Application\VFX\Effect.h" />
     <ClInclude Include="Src\Application\VFX\explosion.h" />
+    <ClInclude Include="Src\Application\VFX\Fexpl.h" />
     <ClInclude Include="Src\Application\VFX\levelup.h" />
     <ClInclude Include="Src\System\Audio\KdAudio.h" />
     <ClInclude Include="src\System\Direct3D\KdDirect3D.h" />
@@ -206,6 +209,8 @@
     <ClCompile Include="..\Library\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Src\Application\Core\main.cpp" />
     <ClCompile Include="Src\Application\Core\Scene.cpp" />
+    <ClCompile Include="Src\Application\Enemy\boss.cpp" />
+    <ClCompile Include="Src\Application\Enemy\BossBullet.cpp" />
     <ClCompile Include="Src\Application\Enemy\Enemy.cpp" />
     <ClCompile Include="Src\Application\Enemy\EnemyManager.cpp" />
     <ClCompile Include="Src\Application\Enemy\EnemyTurret.cpp" />
@@ -225,6 +230,7 @@
     <ClCompile Include="Src\Application\VFX\charge.cpp" />
     <ClCompile Include="Src\Application\VFX\Effect.cpp" />
     <ClCompile Include="Src\Application\VFX\explosion.cpp" />
+    <ClCompile Include="Src\Application\VFX\Fexpl.cpp" />
     <ClCompile Include="Src\Application\VFX\levelup.cpp" />
     <ClCompile Include="Src\System\Audio\KdAudio.cpp" />
     <ClCompile Include="src\System\Direct3D\KdDirect3D.cpp" />
